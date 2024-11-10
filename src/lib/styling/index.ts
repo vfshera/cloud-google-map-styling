@@ -1,6 +1,23 @@
-import { title } from "process";
+export type MapStyling = {
+  label?: {
+    isVisible: boolean;
+    iconColor?: string;
+    textFillColor?: string;
+    textStrokeColor?: string;
+  };
+  polyline?: {
+    isVisible: boolean;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  };
+  polygon?: {
+    isVisible: boolean;
+    fillColor?: string;
+  };
+};
 
-export const features = [
+const features = [
   {
     title: "Points of interest",
     key: "points-of-interest",
@@ -251,7 +268,7 @@ type Feature = (typeof features)[number];
 
 type FeatureKeyUnion = ExtractFeatureKey<Feature>;
 
-export function getFeature(featureKey: FeatureKeyUnion) {
+export function getFeatureTitle(featureKey: FeatureKeyUnion) {
   if (!featureKey) return [];
 
   const [topKey, ...keys] = featureKey.split(".");
@@ -275,129 +292,180 @@ export function getFeature(featureKey: FeatureKeyUnion) {
 
   return titleArray;
 }
+type GeneralFeature = {
+  title: string;
+  key: string;
+  items?: GeneralFeature[];
+};
+const flattenFeatures = (features: GeneralFeature[], keyPrefix = "") => {
+  let result: { title: string; key: string }[] = [];
+
+  for (const feature of features) {
+    const currentKey = keyPrefix
+      ? [keyPrefix, feature.key].join(".")
+      : feature.key;
+    result.push({
+      title: feature.title,
+      key: currentKey,
+    });
+
+    if (feature.items && feature.items.length > 0) {
+      result = [...result, ...flattenFeatures(feature.items, currentKey)];
+    }
+  }
+
+  return result as { title: string; key: FeatureKeyUnion }[];
+};
+
+export const getflatFeatures = () =>
+  flattenFeatures(features as unknown as GeneralFeature[]);
 
 export function getHierarchy() {
   return [
     {
       legacy: "Administrative",
-      new: getFeature("political"),
+      new: getFeatureTitle("political"),
       details: [
-        { legacy: "Country", new: getFeature("political.country") },
-        { legacy: "Province", new: getFeature("political.state-or-province") },
-        { legacy: "Locality", new: getFeature("political.city") },
-        { legacy: "Neighborhood", new: getFeature("political.neighborhood") },
-        { legacy: "Land Parcel", new: getFeature("political.land-parcel") },
+        { legacy: "Country", new: getFeatureTitle("political.country") },
+        {
+          legacy: "Province",
+          new: getFeatureTitle("political.state-or-province"),
+        },
+        { legacy: "Locality", new: getFeatureTitle("political.city") },
+        {
+          legacy: "Neighborhood",
+          new: getFeatureTitle("political.neighborhood"),
+        },
+        {
+          legacy: "Land Parcel",
+          new: getFeatureTitle("political.land-parcel"),
+        },
       ],
     },
     {
       legacy: "Landscape",
-      new: [getFeature("natural.land-cover"), getFeature("infrastructure")],
+      new: [
+        getFeatureTitle("natural.land-cover"),
+        getFeatureTitle("infrastructure"),
+      ],
       details: [
         {
           legacy: "Commercial corridors",
-          new: getFeature("infrastructure.business-corridor"),
+          new: getFeatureTitle("infrastructure.business-corridor"),
         },
-        { legacy: "Human-made", new: getFeature("infrastructure") },
-        { legacy: "Buildings", new: getFeature("infrastructure.building") },
-        { legacy: "Natural", new: getFeature("natural.land-cover") },
-        { legacy: "Landcover", new: getFeature("natural.land-cover") },
+        { legacy: "Human-made", new: getFeatureTitle("infrastructure") },
+        {
+          legacy: "Buildings",
+          new: getFeatureTitle("infrastructure.building"),
+        },
+        { legacy: "Natural", new: getFeatureTitle("natural.land-cover") },
+        { legacy: "Landcover", new: getFeatureTitle("natural.land-cover") },
         { legacy: "Terrain", new: null },
       ],
     },
     {
       legacy: "Points of interest",
-      new: getFeature("points-of-interest"),
+      new: getFeatureTitle("points-of-interest"),
       details: [
         {
           legacy: "Attraction",
           new: [
-            getFeature("points-of-interest.entertainment"),
-            getFeature("points-of-interest.recreation"),
+            getFeatureTitle("points-of-interest.entertainment"),
+            getFeatureTitle("points-of-interest.recreation"),
           ],
         },
         {
           legacy: "Business",
           new: [
-            getFeature("points-of-interest.retail"),
-            getFeature("points-of-interest.services"),
+            getFeatureTitle("points-of-interest.retail"),
+            getFeatureTitle("points-of-interest.services"),
           ],
         },
         {
           legacy: "Shopping",
-          new: getFeature("points-of-interest.retail.shopping"),
+          new: getFeatureTitle("points-of-interest.retail.shopping"),
         },
         {
           legacy: "Food & drink",
-          new: getFeature("points-of-interest.food-and-drink"),
+          new: getFeatureTitle("points-of-interest.food-and-drink"),
         },
         {
           legacy: "Gas station",
-          new: getFeature("points-of-interest.services.gas-station"),
+          new: getFeatureTitle("points-of-interest.services.gas-station"),
         },
         {
           legacy: "Car rental",
-          new: getFeature("points-of-interest.services.car-rental"),
+          new: getFeatureTitle("points-of-interest.services.car-rental"),
         },
-        { legacy: "Lodging", new: getFeature("points-of-interest.lodging") },
+        {
+          legacy: "Lodging",
+          new: getFeatureTitle("points-of-interest.lodging"),
+        },
         {
           legacy: "Government",
-          new: getFeature("points-of-interest.other.government"),
+          new: getFeatureTitle("points-of-interest.other.government"),
         },
         {
           legacy: "Medical",
-          new: getFeature("points-of-interest.emergency.pharmacy"),
+          new: getFeatureTitle("points-of-interest.emergency.pharmacy"),
         },
         {
           legacy: "Park",
-          new: getFeature("points-of-interest.recreation.park"),
+          new: getFeatureTitle("points-of-interest.recreation.park"),
         },
         {
           legacy: "Place of worship",
-          new: getFeature("points-of-interest.other.place-of-worship"),
+          new: getFeatureTitle("points-of-interest.other.place-of-worship"),
         },
         {
           legacy: "School",
-          new: getFeature("points-of-interest.other.school"),
+          new: getFeatureTitle("points-of-interest.other.school"),
         },
         {
           legacy: "Sports complex",
-          new: getFeature("points-of-interest.recreation.sports-complex"),
+          new: getFeatureTitle("points-of-interest.recreation.sports-complex"),
         },
       ],
     },
     {
       legacy: "Road",
-      new: getFeature("infrastructure.road-network"),
+      new: getFeatureTitle("infrastructure.road-network"),
       details: [
         {
           legacy: "Highway",
-          new: getFeature("infrastructure.road-network.roads.highway"),
+          new: getFeatureTitle("infrastructure.road-network.roads.highway"),
         },
         { legacy: "Controlled access", new: null },
         {
           legacy: "Arterial",
-          new: getFeature("infrastructure.road-network.roads.arterial"),
+          new: getFeatureTitle("infrastructure.road-network.roads.arterial"),
         },
         {
           legacy: "Local",
-          new: getFeature("infrastructure.road-network.roads.local"),
+          new: getFeatureTitle("infrastructure.road-network.roads.local"),
         },
         {
           legacy: "Drivable",
-          new: getFeature("infrastructure.road-network.roads.local"),
+          new: getFeatureTitle("infrastructure.road-network.roads.local"),
         },
         {
           legacy: "Trail",
-          new: getFeature("infrastructure.road-network.no-traffic.trail"),
+          new: getFeatureTitle("infrastructure.road-network.no-traffic.trail"),
         },
       ],
     },
     {
       legacy: "Transit",
-      new: getFeature("infrastructure.transit-station"),
+      new: getFeatureTitle("infrastructure.transit-station"),
       details: [
-        { legacy: "Line", new: getFeature("infrastructure.railway-track") },
-        { legacy: "Rail", new: getFeature("infrastructure.railway-track") },
+        {
+          legacy: "Line",
+          new: getFeatureTitle("infrastructure.railway-track"),
+        },
+        {
+          legacy: "Rail",
+          new: getFeatureTitle("infrastructure.railway-track"),
+        },
         {
           legacy: "Ferry",
           new: [
@@ -408,22 +476,22 @@ export function getHierarchy() {
         { legacy: "Routes", new: null },
         {
           legacy: "Station",
-          new: getFeature("infrastructure.transit-station"),
+          new: getFeatureTitle("infrastructure.transit-station"),
         },
         {
           legacy: "Airport",
-          new: getFeature("points-of-interest.transit.airport"),
+          new: getFeatureTitle("points-of-interest.transit.airport"),
         },
         { legacy: "Bus", new: null },
         {
           legacy: "Rail",
-          new: getFeature("infrastructure.transit-station.rail-station"),
+          new: getFeatureTitle("infrastructure.transit-station.rail-station"),
         },
       ],
     },
     {
       legacy: "Water",
-      new: getFeature("natural.water"),
+      new: getFeatureTitle("natural.water"),
     },
   ];
 }
